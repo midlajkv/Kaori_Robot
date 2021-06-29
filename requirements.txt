@@ -1,0 +1,31 @@
+
+
+future
+emoji
+requests
+sqlalchemy==1.3.23
+python-telegram-bot==13.6
+psycopg2
+feedparser
+pyowm
+pythonping
+pynewtonmath
+#memes from SkittBot
+spongemock
+zalgo-text
+geopy
+nltk
+aiohttp>=2.2.5
+Pillow>=4.2.0
+#Cool stuff by Peak
+PyLyrics
+#AEX
+hurry.filesize
+#translator
+beautifulsoup4==4.6.3
+tldextract
+wikipedia
+googletrans
+alphabet_detector
+psutil
+nekos.py

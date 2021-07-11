@@ -1,8 +1,6 @@
-﻿
-
 import html
 from typing import Optional, List
-
+from telegram import ChatPermissions
 from telegram import Message, Chat, Update, Bot, User
 from telegram.error import BadRequest
 from telegram.ext import CommandHandler, Filters
@@ -10,15 +8,28 @@ from telegram.ext.dispatcher import run_async
 from telegram.utils.helpers import mention_html
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, User, CallbackQuery
 
-from Kaori_Robot import dispatcher, LOGGER, SUDO_USERS
-from Kaori_Robot.modules.helper_funcs.chat_status import bot_admin, user_admin, is_user_admin, can_restrict, user_can_ban
-from Kaori_Robot.modules.helper_funcs.extraction import extract_user, extract_user_and_text
-from Kaori_Robot.modules.helper_funcs.string_handling import extract_time
-from Kaori_Robot.modules.log_channel import loggable
+from marvel import dispatcher, LOGGER, SUDO_USERS
+from marvel.modules.helper_funcs.chat_status import bot_admin, user_admin, is_user_admin, can_restrict, user_can_ban
+from marvel.modules.helper_funcs.extraction import extract_user, extract_user_and_text
+from marvel.modules.helper_funcs.string_handling import extract_time
+from marvel.modules.log_channel import loggable
 
-from Kaori_Robot.modules.translations.strings import tld
-from Kaori_Robot.modules.connection import connected
-from Kaori_Robot.modules.disable import DisableAbleCommandHandler
+from marvel.modules.translations.strings import tld
+from marvel.modules.connection import connected
+from marvel.modules.disable import DisableAbleCommandHandler
+
+
+MEDIA_PERMISSIONS = ChatPermissions(can_send_messages=True,
+                                     can_send_media_messages=True,
+                                     can_send_polls=True,
+                                     can_send_other_messages=True,
+                                     can_add_web_page_previews=True)
+
+NOMEDIA_PERMISSIONS = ChatPermissions(can_send_messages=True,
+                                     can_send_media_messages=False,
+                                     can_send_polls=False,
+                                     can_send_other_messages=False,
+                                     can_add_web_page_previews=False)
 
 
 @bot_admin
@@ -61,10 +72,10 @@ def mute(update, context) -> str:
             message.reply_text(tld(chat.id, "No! I'm not muting chat administrator! That would be a pretty dumb idea."))
 
         elif member.can_send_messages is None or member.can_send_messages:
-            bot.restrict_chat_member(chatD.id, user_id, can_send_messages=False)
+            bot.restrict_chat_member(chatD.id, user_id, permissions=ChatPermissions(can_send_messages=False))
             keyboard = []
             reply = tld(chat.id, "{} is muted in {}!").format(mention_html(member.user.id, member.user.first_name), chatD.title)
-            message.reply_text(reply, reply_markup=keyboard, parse_mode=ParseMode.HTML)
+            message.reply_text(reply, parse_mode=ParseMode.HTML)
             return "<b>{}:</b>" \
                    "\n#MUTE" \
                    "\n<b>Admin:</b> {}" \
@@ -113,14 +124,16 @@ def unmute(update, context) -> str:
                 and member.can_send_other_messages and member.can_add_web_page_previews:
             message.reply_text(tld(chat.id, "This user already has the right to speak in {}.").format(chatD.title))
         else:
-            bot.restrict_chat_member(chatD.id, int(user_id),
-                                     can_send_messages=True,
-                                     can_send_media_messages=True,
-                                     can_send_other_messages=True,
-                                     can_add_web_page_previews=True)
+            context.bot.restrict_chat_member(chatD.id, int(user_id),
+                                        permissions=ChatPermissions(
+                                         can_send_messages=True,
+                                         can_send_media_messages=True,
+                                         can_send_other_messages=True,
+                                         can_add_web_page_previews=True)
+                                        )
             keyboard = []
             reply = tld(chat.id, "Yep, {} can start talking again in {}!").format(mention_html(member.user.id, member.user.first_name), chatD.title)
-            message.reply_text(reply, reply_markup=keyboard, parse_mode=ParseMode.HTML)
+            message.reply_text(reply, parse_mode=ParseMode.HTML)
             return "<b>{}:</b>" \
                    "\n#UNMUTE" \
                    "\n<b>• Admin:</b> {}" \
@@ -207,7 +220,7 @@ def temp_mute(update, context) -> str:
 
     try:
         if member.can_send_messages is None or member.can_send_messages:
-            bot.restrict_chat_member(chat.id, user_id, until_date=mutetime, can_send_messages=False)
+            bot.restrict_chat_member(chat.id, user_id, until_date=mutetime, permissions=ChatPermissions(can_send_messages=False))
             message.reply_text(tld(chat.id, "Muted for {} in {}!").format(time_val, chatD.title))
             return log
         else:
@@ -263,13 +276,10 @@ def nomedia(update, context) -> str:
             message.reply_text(tld(chat.id, "Afraid I can't restrict admins!"))
 
         elif member.can_send_messages is None or member.can_send_messages:
-            bot.restrict_chat_member(chatD.id, user_id, can_send_messages=True,
-                                     can_send_media_messages=False,
-                                     can_send_other_messages=False,
-                                     can_add_web_page_previews=False)
+            context.bot.restrict_chat_member(chatD.id, user_id, NOMEDIA_PERMISSIONS)
             keyboard = []
             reply = tld(chat.id, "{} is restricted from sending media in {}!").format(mention_html(member.user.id, member.user.first_name), chatD.title)
-            message.reply_text(reply, reply_markup=keyboard, parse_mode=ParseMode.HTML)
+            message.reply_text(reply, parse_mode=ParseMode.HTML)
             return "<b>{}:</b>" \
                    "\n#RESTRICTED" \
                    "\n<b>• Admin:</b> {}" \
@@ -318,14 +328,10 @@ def media(update, context) -> str:
                 and member.can_send_other_messages and member.can_add_web_page_previews:
             message.reply_text(tld(chat.id, "This user already has the rights to send anything in {}.").format(chatD.title))
         else:
-            bot.restrict_chat_member(chatD.id, int(user_id),
-                                     can_send_messages=True,
-                                     can_send_media_messages=True,
-                                     can_send_other_messages=True,
-                                     can_add_web_page_previews=True)
+            context.bot.restrict_chat_member(chatD.id, int(user_id), NOMEDIA_PERMISSIONS)
             keyboard = []
             reply = tld(chat.id, "Yep, {} can send media again in {}!").format(mention_html(member.user.id, member.user.first_name), chatD.title)
-            message.reply_text(reply, reply_markup=keyboard, parse_mode=ParseMode.HTML)
+            message.reply_text(reply,  parse_mode=ParseMode.HTML)
             return "<b>{}:</b>" \
                    "\n#UNRESTRICTED" \
                    "\n<b>• Admin:</b> {}" \
@@ -413,10 +419,7 @@ def temp_nomedia(update, context) -> str:
 
     try:
         if member.can_send_messages is None or member.can_send_messages:
-            bot.restrict_chat_member(chat.id, user_id, until_date=mutetime, can_send_messages=True,
-                                     can_send_media_messages=False,
-                                     can_send_other_messages=False,
-                                     can_add_web_page_previews=False)
+            context.bot.restrict_chat_member(chat.id, user_id, NOMEDIA_PERMISSIONS, until_date=mutetime)
             message.reply_text(tld(chat.id, "Restricted from sending media for {} in {}!").format(time_val, chatD.title))
             return log
         else:

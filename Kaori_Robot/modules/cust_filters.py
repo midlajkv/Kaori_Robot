@@ -30,9 +30,9 @@ def list_handlers(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     bot = context.bot
-    
+
     conn = connected(bot, update, chat, user.id, need_admin=False)
-    if not conn == False:
+    if conn != False:
         chat_id = conn
         chat_name = dispatcher.bot.getChat(conn).title
         filter_list = tld(chat.id, "*List of filters in {}:*\n")
@@ -81,16 +81,12 @@ def filters(update, context):
     args = msg.text.split(None, 1)  # use python's maxsplit to separate Cmd, keyword, and reply_text
 
     conn = connected(bot, update, chat, user.id)
-    if not conn == False:
+    if conn != False:
         chat_id = conn
         chat_name = dispatcher.bot.getChat(conn).title
     else:
         chat_id = update.effective_chat.id
-        if chat.type == "private":
-            chat_name = "local notes"
-        else:
-            chat_name = chat.title
-
+        chat_name = "local notes" if chat.type == "private" else chat.title
     if len(args) < 2:
         return
 
@@ -149,7 +145,7 @@ def filters(update, context):
     # Note: perhaps handlers can be removed somehow using sql.get_chat_filters
     add = addnew_filter(update, chat_id, keyword, content, is_sticker, is_document, is_image, is_audio, is_voice, is_video,
                    buttons)
-    
+
     for handler in dispatcher.handlers.get(HANDLER_GROUP, []):
         if handler.filters == (keyword, chat_id):
             dispatcher.remove_handler(handler, HANDLER_GROUP)            
@@ -166,16 +162,12 @@ def stop_filter(update, context):
     args = update.effective_message.text.split(None, 1)
 
     conn = connected(bot, update, chat, user.id)
-    if not conn == False:
+    if conn != False:
         chat_id = conn
         chat_name = dispatcher.bot.getChat(conn).title
     else:
         chat_id = update.effective_chat.id
-        if chat.type == "private":
-            chat_name = "local notes"
-        else:
-            chat_name = chat.title
-
+        chat_name = "local notes" if chat.type == "private" else chat.title
     if len(args) < 2:
         return
 
@@ -205,7 +197,7 @@ def reply_filter(update, context):
 
     chat_filters = sql.get_chat_triggers(chat.id)
     for keyword in chat_filters:
-        pattern = r"( |^|[^\w])" + re.escape(keyword) + r"( |$|[^\w])"
+        pattern = f"( |^|[^\\w]){re.escape(keyword)}( |$|[^\\w])"
         if re.search(pattern, to_match, flags=re.IGNORECASE):
             filt = sql.get_filter(chat.id, keyword)
             if filt.is_sticker:
@@ -230,14 +222,14 @@ def reply_filter(update, context):
                                        disable_web_page_preview=True,
                                        reply_markup=keyboard)
                 except BadRequest as excp:
-                    if excp.message == "Unsupported url protocol":
-                        message.reply_text("You seem to be trying to use an unsupported url protocol. Telegram "
-                                           "doesn't support buttons for some protocols, such as tg://. Please try "
-                                           "again, or ask in @TheBotsupports for help.")
-                    elif excp.message == "Reply message not found":
+                    if excp.message == "Reply message not found":
                         bot.send_message(chat.id, filt.reply, parse_mode=ParseMode.MARKDOWN,
                                          disable_web_page_preview=True,
                                          reply_markup=keyboard)
+                    elif excp.message == "Unsupported url protocol":
+                        message.reply_text("You seem to be trying to use an unsupported url protocol. Telegram "
+                                           "doesn't support buttons for some protocols, such as tg://. Please try "
+                                           "again, or ask in @TheBotsupports for help.")
                     else:
                         message.reply_text("This note could not be sent, as it is incorrectly formatted. Ask in "
                                            "@TheBotsupports if you can't figure out why!")

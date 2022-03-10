@@ -15,10 +15,13 @@ def can_delete(chat: Chat, bot_id: int) -> bool:
 
 
 def is_user_ban_protected(chat: Chat, user_id: int, member: ChatMember = None) -> bool:
-    if chat.type == 'private' \
-            or user_id in SUDO_USERS \
-            or user_id in WHITELIST_USERS \
-            or chat.all_members_are_administrators or user_id in (1087968824, 1091139479):
+    if (
+        chat.type == 'private'
+        or user_id in SUDO_USERS
+        or user_id in WHITELIST_USERS
+        or chat.all_members_are_administrators
+        or user_id in {1087968824, 1091139479}
+    ):
         return True
 
     if not member:
@@ -27,9 +30,12 @@ def is_user_ban_protected(chat: Chat, user_id: int, member: ChatMember = None) -
 
 
 def is_user_admin(chat: Chat, user_id: int, member: ChatMember = None) -> bool:
-    if chat.type == 'private' \
-            or user_id in SUDO_USERS \
-            or chat.all_members_are_administrators or user_id in (777000, 1087968824, 1091139479):
+    if (
+        chat.type == 'private'
+        or user_id in SUDO_USERS
+        or chat.all_members_are_administrators
+        or user_id in {777000, 1087968824, 1091139479}
+    ):
         return True
 
     if not member:
@@ -182,8 +188,11 @@ def user_can_ban(func):
         user = update.effective_user.id
         member = update.effective_chat.get_member(user)
 
-        if not (member.can_restrict_members or
-                member.status == "creator") and not user in SUDO_USERS:
+        if (
+            not member.can_restrict_members
+            and member.status != "creator"
+            and user not in SUDO_USERS
+        ):
             update.effective_message.reply_text(
                 "You are missing the following rights to use this command: \nCanRestrictUsers.")
             return ""
@@ -195,17 +204,21 @@ def user_can_ban(func):
 
 def user_can_delete(func):	
 
-    @wraps(func)	
+    @wraps(func)
     def message_deleter(update, context, *args, **kwargs):	                         	
         	
-        user = update.effective_user.id	
+        user = update.effective_user.id
         member = update.effective_chat.get_member(user)
-        
 
-        if not (member.can_delete_messages or member.status == "creator") and not user in SUDO_USERS:
+
+        if (
+            not member.can_delete_messages
+            and member.status != "creator"
+            and user not in SUDO_USERS
+        ):
             update.effective_message.reply_text("You are missing the following rights to use this command: \nCanDeleteMessages")	
             return ""	
-             
+
 
         return func(update, context, *args, **kwargs)	
 
@@ -213,14 +226,18 @@ def user_can_delete(func):
 
 def user_can_pin(func):	
 
-    @wraps(func)	
+    @wraps(func)
     def message_pinner(update, context, *args, **kwargs):	                         	
         	
-        user = update.effective_user.id	
+        user = update.effective_user.id
         member = update.effective_chat.get_member(user)
-        
 
-        if not (member.can_pin_messages or member.status == "creator") and not user in SUDO_USERS:
+
+        if (
+            not member.can_pin_messages
+            and member.status != "creator"
+            and user not in SUDO_USERS
+        ):
             update.effective_message.reply_text("You are missing the following rights to use this command: \nCanPinMessages")	
             return ""	
 
@@ -230,15 +247,19 @@ def user_can_pin(func):
 
 def user_can_change(func):	
 
-    @wraps(func)	
+    @wraps(func)
     def info_changer(update, context, *args, **kwargs):	
-        user = update.effective_user.id	
+        user = update.effective_user.id
         member = update.effective_chat.get_member(user)	
-        
 
-        if not (member.can_change_info or member.status == "creator") and not user in SUDO_USERS:
+
+        if (
+            not member.can_change_info
+            and member.status != "creator"
+            and user not in SUDO_USERS
+        ):
             update.effective_message.reply_text("You are missing the following rights to use this command: \nCanChangeInfo")
-                   	
+
             return ""	
 
         return func(update, context, *args, **kwargs)	
@@ -247,13 +268,17 @@ def user_can_change(func):
 
 def user_can_promote(func):	
 
-    @wraps(func)	
+    @wraps(func)
     def permoter(update, context, *args, **kwargs):		
-        user = update.effective_user.id	
+        user = update.effective_user.id
         member = update.effective_chat.get_member(user)	
-        
 
-        if not (member.can_promote_members or member.status == "creator") and not user in SUDO_USERS:
+
+        if (
+            not member.can_promote_members
+            and member.status != "creator"
+            and user not in SUDO_USERS
+        ):
             update.effective_message.reply_text("You are missing the following rights to use this command: \nCanPromoteUsers")	
             return ""	
 

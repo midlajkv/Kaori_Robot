@@ -31,23 +31,27 @@ from Kaori_Robot.modules.connection import connected
 
 buttons = [
     [
-                        InlineKeyboardButton(
-                            text="👥 𝙰𝚍𝚍 𝙲𝚞𝚝𝚒𝚎𝚙𝚒𝚒 𝚃𝚘 𝚈𝚘𝚞𝚛 𝙶𝚛𝚘𝚞𝚙 👥",
-                            url="t.me/Cutiepii_Robot?startgroup=true")
-                    ],
-                   [
-                       InlineKeyboardButton(text="❓ 𝙷𝚎𝚕𝚙 & 𝙲𝚘𝚖𝚖𝚊𝚗𝚍𝚜 ❓", callback_data="help_back")
-                     ],
-                     [
-                         InlineKeyboardButton(
-                             text="🙋 𝚂𝚞𝚙𝚙𝚘𝚛𝚝 𝙲𝚑𝚊𝚝 🙋",
-                             url=f"https://t.me/Black_Knights_Union_Support"),
-                         InlineKeyboardButton(
-                             text="📺 𝚄𝚙𝚍𝚊𝚝𝚎𝚜 📺",
-                             url="https://t.me/Black_Knights_Union")
-                  
-                     ], 
-    ]
+        InlineKeyboardButton(
+            text="👥 𝙰𝚍𝚍 𝙲𝚞𝚝𝚒𝚎𝚙𝚒𝚒 𝚃𝚘 𝚈𝚘𝚞𝚛 𝙶𝚛𝚘𝚞𝚙 👥",
+            url="t.me/Cutiepii_Robot?startgroup=true",
+        )
+    ],
+    [
+        InlineKeyboardButton(
+            text="❓ 𝙷𝚎𝚕𝚙 & 𝙲𝚘𝚖𝚖𝚊𝚗𝚍𝚜 ❓", callback_data="help_back"
+        )
+    ],
+    [
+        InlineKeyboardButton(
+            text="🙋 𝚂𝚞𝚙𝚙𝚘𝚛𝚝 𝙲𝚑𝚊𝚝 🙋",
+            url="https://t.me/Black_Knights_Union_Support",
+        ),
+        InlineKeyboardButton(
+            text="📺 𝚄𝚙𝚍𝚊𝚝𝚎𝚜 📺", url="https://t.me/Black_Knights_Union"
+        ),
+    ],
+]
+
 
 
 PM_START_TEXT = """
@@ -84,7 +88,7 @@ for module_name in ALL_MODULES:
     if not hasattr(imported_module, "__mod_name__"):
         imported_module.__mod_name__ = imported_module.__name__
 
-    if not imported_module.__mod_name__.lower() in IMPORTED:
+    if imported_module.__mod_name__.lower() not in IMPORTED:
         IMPORTED[imported_module.__mod_name__.lower()] = imported_module
     else:
         raise Exception("Can't have two modules with the same name! Please change one")
@@ -154,10 +158,7 @@ def get_readable_time(seconds: int) -> str:
 
     while count < 4:
         count += 1
-        if count < 3:
-            remainder, result = divmod(seconds, 60)
-        else:
-            remainder, result = divmod(seconds, 24)
+        remainder, result = divmod(seconds, 60) if count < 3 else divmod(seconds, 24)
         if seconds == 0 and remainder == 0:
             break
         time_list.append(int(result))
@@ -166,7 +167,7 @@ def get_readable_time(seconds: int) -> str:
     for x in range(len(time_list)):
         time_list[x] = str(time_list[x]) + time_suffix_list[x]
     if len(time_list) == 4:
-        ping_time += time_list.pop() + ", "
+        ping_time += f'{time_list.pop()}, '
 
     time_list.reverse()
     ping_time += ":".join(time_list)
@@ -258,11 +259,8 @@ def error_callback(update, context):
     # we raise the error again, so the logger module catches it. If you don't use the logger module, use it.
     try:
         raise context.error
-    except Unauthorized:
+    except (Unauthorized, BadRequest):
         # remove update.message.chat_id from conversation list
-        LOGGER.exception('Update "%s" caused error "%s"', update, context.error)
-    except BadRequest:
-        # handle malformed requests - read more below!
         LOGGER.exception('Update "%s" caused error "%s"', update, context.error)
     except TimedOut:
         # handle slow connection problems
@@ -320,13 +318,11 @@ def help_button(update, context):
         # ensure no spinny white circle
         context.bot.answer_callback_query(query.id)
     except Exception as excp:
-        if excp.message == "Message is not modified":
-            pass
-        elif excp.message == "Query_id_invalid":
-            pass
-        elif excp.message == "Message can't be deleted":
-            pass
-        else:
+        if excp.message not in [
+            "Message is not modified",
+            "Query_id_invalid",
+            "Message can't be deleted",
+        ]:
             query.message.edit_text(excp.message)
             LOGGER.exception("Exception in help buttons. %s", str(query.data))
 
@@ -369,18 +365,17 @@ def send_settings(chat_id, user_id, user=False):
             dispatcher.bot.send_message(user_id, tld(chat_id, "Looks like there are no user-specific settings available"),
                                         parse_mode=ParseMode.MARKDOWN)
 
+    elif CHAT_SETTINGS:
+        chat_name = dispatcher.bot.getChat(chat_id).title
+        dispatcher.bot.send_message(user_id,
+                                    text=tld(chat_id, "Which module do you want to check for settings {}?").format(
+                                        chat_name),
+                                    reply_markup=InlineKeyboardMarkup(
+                                        paginate_modules(0, CHAT_SETTINGS, "stngs", chat=chat_id)))
     else:
-        if CHAT_SETTINGS:
-            chat_name = dispatcher.bot.getChat(chat_id).title
-            dispatcher.bot.send_message(user_id,
-                                        text=tld(chat_id, "Which module do you want to check for settings {}?").format(
-                                            chat_name),
-                                        reply_markup=InlineKeyboardMarkup(
-                                            paginate_modules(0, CHAT_SETTINGS, "stngs", chat=chat_id)))
-        else:
-            dispatcher.bot.send_message(user_id, tld(chat_id, "Looks like there are no chat settings available \nSend this "
-                                                 "to your chat as an admin to find the current settings!"),
-                                        parse_mode=ParseMode.MARKDOWN)
+        dispatcher.bot.send_message(user_id, tld(chat_id, "Looks like there are no chat settings available \nSend this "
+                                             "to your chat as an admin to find the current settings!"),
+                                    parse_mode=ParseMode.MARKDOWN)
 
 
 
@@ -437,13 +432,11 @@ def settings_button(update, context):
         # ensure no spinny white circle
         bot.answer_callback_query(query.id)
     except BadRequest as excp:
-        if excp.message == "Message is not modified":
-            pass
-        elif excp.message == "Query_id_invalid":
-            pass
-        elif excp.message == "Message can't be deleted":
-            pass
-        else:
+        if excp.message not in [
+            "Message is not modified",
+            "Query_id_invalid",
+            "Message can't be deleted",
+        ]:
             LOGGER.exception("Exception in settings buttons. %s", str(query.data))
 
 
@@ -456,19 +449,18 @@ def get_settings(update, context):
     #args = msg.text.split(None, 1) #Unused variable
 
     # ONLY send settings in PM
-    if chat.type != chat.PRIVATE:
-        if is_user_admin(chat, user.id):
-            text = "Click here to get this chat's settings, as well as yours."
-            msg.reply_text(text,
-                           reply_markup=InlineKeyboardMarkup(
-                               [[InlineKeyboardButton(text="Settings",
-                                                      url="t.me/{}?start=stngs_{}".format(
-                                                          bot.username, chat.id))]]))
-        else:
-            text = "Click here to check your settings."
-
-    else:
+    if chat.type == chat.PRIVATE:
         send_settings(chat.id, user.id, update, True)
+
+    elif is_user_admin(chat, user.id):
+        text = "Click here to get this chat's settings, as well as yours."
+        msg.reply_text(text,
+                       reply_markup=InlineKeyboardMarkup(
+                           [[InlineKeyboardButton(text="Settings",
+                                                  url="t.me/{}?start=stngs_{}".format(
+                                                      bot.username, chat.id))]]))
+    else:
+        text = "Click here to check your settings."
 
 
 def migrate_chats(update, context):
@@ -533,5 +525,5 @@ def main():
     updater.idle()
 
 if __name__ == '__main__':
-    LOGGER.info("Successfully loaded modules: " + str(ALL_MODULES))
+    LOGGER.info(f"Successfully loaded modules: {str(ALL_MODULES)}")
     main()

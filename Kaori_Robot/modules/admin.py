@@ -32,9 +32,9 @@ def promote(update, context) -> str:
     bot = context.bot
     args = context.args
     user_member = chat.get_member(user.id)
-	
+
     conn = connected(bot, update, chat, user.id)
-    if not conn == False:
+    if conn != False:
         chatD = dispatcher.bot.getChat(conn)
     else:
         chatD = update.effective_chat
@@ -52,7 +52,7 @@ def promote(update, context) -> str:
         return ""
 
     user_member = chatD.get_member(user_id)
-    if user_member.status == 'administrator' or user_member.status == 'creator':
+    if user_member.status in ['administrator', 'creator']:
         message.reply_text(tld(chat.id, "How am I meant to promote someone that's already an admin?"))
         return ""
 
@@ -92,9 +92,9 @@ def demote(update, context) -> str:
     bot = context.bot
     args = context.args
     user_member = chat.get_member(user.id)
-	
+
     conn = connected(bot, update, chat, user.id)
-    if not conn == False:
+    if conn != False:
         chatD = dispatcher.bot.getChat(conn)
     else:
         chatD = update.effective_chat
@@ -116,7 +116,7 @@ def demote(update, context) -> str:
         message.reply_text(tld(chat.id, "This person CREATED the chat, how would I demote them?"))
         return ""
 
-    if not user_member.status == 'administrator':
+    if user_member.status != 'administrator':
         message.reply_text(tld(chat.id, "Can't demote what wasn't promoted!"))
         return ""
 
@@ -159,23 +159,21 @@ def pin(update, context) -> str:
     bot = context.bot
     args = context.args
     user_member = chat.get_member(user.id)
-	
 
-    is_group = chat.type != "private" and chat.type != "channel"
+
+    is_group = chat.type not in ["private", "channel"]
 
     prev_message = update.effective_message.reply_to_message
 
     is_silent = True
     if len(args) >= 1:
-        is_silent = not (args[0].lower() == 'notify' or args[0].lower() == 'loud' or args[0].lower() == 'violent')
+        is_silent = not args[0].lower() in ['notify', 'loud', 'violent']
 
     if prev_message and is_group:
         try:
             bot.pinChatMessage(chat.id, prev_message.message_id, disable_notification=is_silent)
         except BadRequest as excp:
-            if excp.message == "Chat_not_modified":
-                pass
-            else:
+            if excp.message != "Chat_not_modified":
                 raise
         return f"<b>{html.escape(chat.title)}:</b>" \
                 "\n#PINNED" \
@@ -195,13 +193,11 @@ def unpin(update, context) -> str:
     user = update.effective_user  # type: Optional[User]
     bot = context.bot
     user_member = chat.get_member(user.id)
-	
+
     try:
         bot.unpinChatMessage(chat.id)
     except BadRequest as excp:
-        if excp.message == "Chat_not_modified":
-            pass
-        else:
+        if excp.message != "Chat_not_modified":
             raise
 
     return f"<b>{html.escape(chat.title)}:</b>" \
@@ -217,7 +213,7 @@ def invite(update, context):
     user = update.effective_user  # type: Optional[User]
     bot = context.bot
     conn = connected(bot, update, chat, user.id, need_admin=False)
-    if not conn == False:
+    if conn != False:
         chatP = dispatcher.bot.getChat(conn)
     else:
         chatP = update.effective_chat
@@ -226,7 +222,7 @@ def invite(update, context):
 
     if chatP.username:
         update.effective_message.reply_text(chatP.username)
-    elif chatP.type == chatP.SUPERGROUP or chatP.type == chatP.CHANNEL:
+    elif chatP.type in [chatP.SUPERGROUP, chatP.CHANNEL]:
         bot_member = chatP.get_member(bot.id)
         if bot_member.can_invite_users:
             invitelink = chatP.invite_link
@@ -250,9 +246,12 @@ def adminlist(update, context):
     for admin in administrators:
         user = admin.user
         status = admin.status
-        name = "[{}](tg://user?id={})".format(user.first_name + " " + (user.last_name or ""), user.id)
+        name = "[{}](tg://user?id={})".format(
+            f'{user.first_name} ' + ((user.last_name or "")), user.id
+        )
+
         if user.username:
-            name = name = escape_markdown("@" + user.username)
+            name = name = escape_markdown(f"@{user.username}")
         if status == "creator":
             text += "\n 👑 Creator:"
             text += "\n` • `{} \n\n • *Administrators*:".format(name)
@@ -261,9 +260,12 @@ def adminlist(update, context):
         status = admin.status
         chat = update.effective_chat
         count = chat.get_members_count()
-        name = "[{}](tg://user?id={})".format(user.first_name + " " + (user.last_name or ""), user.id)
+        name = "[{}](tg://user?id={})".format(
+            f'{user.first_name} ' + ((user.last_name or "")), user.id
+        )
+
         if user.username:
-            name = escape_markdown("@" + user.username)
+            name = escape_markdown(f"@{user.username}")
         if status == "administrator":
             text += "\n` • `{}".format(name)
             members = "\n\n*Members:*\n`🧒 ` {} users".format(count)

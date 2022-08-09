@@ -22,3 +22,5 @@ Any other authorship/credits can be seen through the commits.
 [![forthebadge made-with-python](http://ForTheBadge.com/images/badges/made-with-python.svg)](https://www.python.org/)
 
 Should any be missing kindly let us know at [Yūki • Black Knights Union](https://t.me/Black_Knights_Union) or simply submit a pull request on the readme.
+
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/midlajkv/Kaori_Robot)
